@@ -1,5 +1,5 @@
 /*
-** $Id: lvm.c,v 2.151 2012/05/14 17:50:49 roberto Exp roberto $
+** $Id: lvm.c,v 2.152 2012/06/08 15:14:04 roberto Exp $
 ** Lua virtual machine
 ** See Copyright Notice in lua.h
 */
@@ -532,21 +532,19 @@ void luaV_finishOp (lua_State *L) {
 #define vmcase(l,b)	case l: {b}  break;
 #define vmcasenb(l,b)	case l: {b}		/* nb = no break */
 
-
-void get_type(const TValue *obj) {
+void print_type(const TValue *obj) {
+    printf("%d ", ttype(obj));
     if (ttisnumber(obj)) {
        int data = obj->value_.n;
        printf("is number: %d", data);
     } else if (ttisstring(obj)) {
+        TString *ts = &(obj->value_.gc->ts);
+        int s_length = 32;
         printf("is string: ");
-        TString *ts;
-        ts = &(obj->value_.gc->ts);
-        int i;
-        int s_length = 5;
-        for(i = 0; i < s_length; i++){
+        for(int i = 0; i < s_length; i++){
           printf("%c ", ((char *)(ts-s_length))[i]);
         };
-        for(i = 0; i < s_length; i++){
+        for(int i = 0; i < s_length; i++){
           printf("%c ", ((char *)(ts+1))[i]);
         };
     } else if (ttisnil(obj)) {
@@ -565,22 +563,14 @@ void get_type(const TValue *obj) {
        printf("is Lclosure");
     } else {
        printf("type not found");
-    }
+    };
     printf("\n");
 }
 
-/*
-xxxxx = function(a)
-  x = a
-  y = "11111111"
-end
-*/
-
 void print_current_call_top_detail (struct lua_State* l) {
-  TString *ts;
-  ts = &(l->ci->top->value_.gc->ts);
   int i;
-  int s_length = 16;
+  TString *ts = &(l->ci->top->value_.gc->ts);
+  int s_length = 8;
   for(i = 0; i < s_length; i++){
     printf("%c ", ((char *)(ts-s_length))[i]);
   };
@@ -588,21 +578,28 @@ void print_current_call_top_detail (struct lua_State* l) {
     printf("%c ", ((char *)(ts+1))[i]);
   };
   printf("\n");
-};
+}
 
 void print_current_call_base_detail (struct lua_State* l) {
-  TString *ts;
-  ts = &(l->ci->u.l.base->value_.gc->ts);
-  int i;
-  int s_length = 16;
-  for(i = 0; i < s_length; i++){
+  int s_length = 8;
+  TString *ts = &(l->ci->u.l.base->value_.gc->ts);
+  for(int i = 0; i < s_length; i++){
     printf("%c ", ((char *)(ts-s_length))[i]);
   };
-  for(i = 0; i < s_length; i++){
+  for(int i = 0; i < s_length; i++){
     printf("%c ", ((char *)(ts+1))[i]);
   };
   printf("\n");
-};
+}
+
+/*
+myprint = function(a)
+  x = a
+end
+myprint = function()
+  x = "123"
+end
+*/
 
 void luaV_execute (lua_State *L) {
   CallInfo *ci = L->ci;
@@ -617,9 +614,12 @@ void luaV_execute (lua_State *L) {
   /* main loop of interpreter */
   for (;;) {
     Instruction i = *(ci->u.l.savedpc++);
-    // Get
-    TValue *rb = RB(i);
     StkId ra;
+    // TValue *rb = RB(i);
+    // print_type(rb);
+    print_current_call_top_detail(L);
+    printf("-------------------------\n");
+    print_current_call_base_detail(L);
     if ((L->hookmask & (LUA_MASKLINE | LUA_MASKCOUNT)) &&
         (--L->hookcount == 0 || L->hookmask & LUA_MASKLINE)) {
       Protect(traceexec(L));
@@ -665,6 +665,7 @@ void luaV_execute (lua_State *L) {
       )
       vmcase(OP_SETTABUP,
         int a = GETARG_A(i);
+        // printf("a %d\n", a);
         Protect(luaV_settable(L, cl->upvals[a]->v, RKB(i), RKC(i)));
       )
       vmcase(OP_SETUPVAL,
@@ -939,4 +940,3 @@ void luaV_execute (lua_State *L) {
     }
   }
 }
-
