@@ -532,6 +532,78 @@ void luaV_finishOp (lua_State *L) {
 #define vmcase(l,b)	case l: {b}  break;
 #define vmcasenb(l,b)	case l: {b}		/* nb = no break */
 
+
+void get_type(const TValue *obj) {
+    if (ttisnumber(obj)) {
+       int data = obj->value_.n;
+       printf("is number: %d", data);
+    } else if (ttisstring(obj)) {
+        printf("is string: ");
+        TString *ts;
+        ts = &(obj->value_.gc->ts);
+        int i;
+        int s_length = 5;
+        for(i = 0; i < s_length; i++){
+          printf("%c ", ((char *)(ts-s_length))[i]);
+        };
+        for(i = 0; i < s_length; i++){
+          printf("%c ", ((char *)(ts+1))[i]);
+        };
+    } else if (ttisnil(obj)) {
+       printf("is nil");
+    } else if (ttisshrstring(obj)) {
+       printf("is shrstring");
+    } else if (ttislngstring(obj)) {
+       printf("is lngstring");
+    } else if (ttistable(obj)) {
+       printf("is table");
+    } else if (ttisfunction(obj)) {
+       printf("is function");
+    } else if (ttisclosure(obj)) {
+       printf("is closure");
+    } else if (ttisLclosure(obj)) {
+       printf("is Lclosure");
+    } else {
+       printf("type not found");
+    }
+    printf("\n");
+}
+
+/*
+xxxxx = function(a)
+  x = a
+  y = "11111111"
+end
+*/
+
+void print_current_call_top_detail (struct lua_State* l) {
+  TString *ts;
+  ts = &(l->ci->top->value_.gc->ts);
+  int i;
+  int s_length = 16;
+  for(i = 0; i < s_length; i++){
+    printf("%c ", ((char *)(ts-s_length))[i]);
+  };
+  for(i = 0; i < s_length; i++){
+    printf("%c ", ((char *)(ts+1))[i]);
+  };
+  printf("\n");
+};
+
+void print_current_call_base_detail (struct lua_State* l) {
+  TString *ts;
+  ts = &(l->ci->u.l.base->value_.gc->ts);
+  int i;
+  int s_length = 16;
+  for(i = 0; i < s_length; i++){
+    printf("%c ", ((char *)(ts-s_length))[i]);
+  };
+  for(i = 0; i < s_length; i++){
+    printf("%c ", ((char *)(ts+1))[i]);
+  };
+  printf("\n");
+};
+
 void luaV_execute (lua_State *L) {
   CallInfo *ci = L->ci;
   LClosure *cl;
@@ -545,6 +617,8 @@ void luaV_execute (lua_State *L) {
   /* main loop of interpreter */
   for (;;) {
     Instruction i = *(ci->u.l.savedpc++);
+    // Get
+    TValue *rb = RB(i);
     StkId ra;
     if ((L->hookmask & (LUA_MASKLINE | LUA_MASKCOUNT)) &&
         (--L->hookcount == 0 || L->hookmask & LUA_MASKLINE)) {

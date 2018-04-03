@@ -150,6 +150,13 @@ typedef struct global_State {
 
 /*
 ** `per thread' state
+every thread have many stack,
+every stack is top field with type StkId (alias: TValue*)
+every stack is stack_last field with type StkId (alias: TValue*)
+every stack is stack field with type StkId (alias: TValue*)
+
+stack 指向了一个可以动态增长的 TValue 数组, 数组的形式实现 stack
+各种参数、局部变量、临时变量就临时的存活在这个动态 TValue 数组表示的栈上
 */
 struct lua_State {
   CommonHeader;
